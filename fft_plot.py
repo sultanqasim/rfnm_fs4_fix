@@ -8,7 +8,7 @@ def main(fname):
     samprate = int(fname[13:-5])
     buf = numpy.fromfile(fname, numpy.complex64)
 
-    PSD_SIZE = 16384
+    PSD_SIZE = 8192
 
     plt.figure(figsize=[8, 12], dpi=240)
     fig, axs = plt.subplots(3)

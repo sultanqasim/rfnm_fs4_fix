@@ -27,7 +27,7 @@ def main(samp_rate_index):
     sdr.activateStream(rxStream)
 
     print("Fetching samples")
-    CHUNK_SZ = 1 << 20
+    CHUNK_SZ = 1 << 18
     buff = numpy.array([0]*CHUNK_SZ, numpy.complex64)
     for i in range(100):
         sr = sdr.readStream(rxStream, [buff], CHUNK_SZ)
