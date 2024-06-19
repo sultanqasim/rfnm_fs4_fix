@@ -23,7 +23,7 @@ def main(samp_rate_index):
     sdr.setGain(SoapySDR.SOAPY_SDR_RX, 0, -23)
 
     print("Setting up stream")
-    rxStream = sdr.setupStream(SoapySDR.SOAPY_SDR_RX, SoapySDR.SOAPY_SDR_CF32)
+    rxStream = sdr.setupStream(SoapySDR.SOAPY_SDR_RX, SoapySDR.SOAPY_SDR_CF32, [0])
     sdr.activateStream(rxStream)
 
     print("Fetching samples")
