@@ -24,10 +24,6 @@ def main():
         sdr.setFrequency(SoapySDR.SOAPY_SDR_RX, channel, 2.1E9)
         sdr.setGain(SoapySDR.SOAPY_SDR_RX, channel, 0)
 
-    print("Setting up stream")
-    rxStream = sdr.setupStream(SoapySDR.SOAPY_SDR_RX, SoapySDR.SOAPY_SDR_CF32, list(range(NUM_CHANNELS)))
-    sdr.activateStream(rxStream)
-
     # allocate buffers and files
     buffs = []
     files = []
@@ -35,10 +31,14 @@ def main():
         buffs.append(numpy.array([0]*CHUNK_SZ, numpy.complex64))
         files.append(open("test%d.cf32" % i, 'wb'))
 
+    print("Setting up stream")
+    rxStream = sdr.setupStream(SoapySDR.SOAPY_SDR_RX, SoapySDR.SOAPY_SDR_CF32, list(range(NUM_CHANNELS)))
+    t_start = time()
+    sdr.activateStream(rxStream)
+
     print("Fetching samples")
     samples_read = 0
     samples_to_read = CHUNK_SZ * 2000
-    t_start = time()
     while samples_read < samples_to_read:
         sr = sdr.readStream(rxStream, buffs, CHUNK_SZ, timeoutUs=0)
         samples_read += sr.ret
