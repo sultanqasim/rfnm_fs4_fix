@@ -43,7 +43,8 @@ def main():
         sr = sdr.readStream(rxStream, buffs, CHUNK_SZ, timeoutUs=0)
         samples_read += sr.ret
         for i in range(NUM_CHANNELS):
-            files[i].write(buffs[i].tobytes())
+            files[i].write(buffs[i][:sr.ret].tobytes())
+            buffs[i][:] = 0
         print("Read %d samples, time %.3f" % (samples_read, sr.timeNs / 1e9), end='\r')
     t_end = time()
 
