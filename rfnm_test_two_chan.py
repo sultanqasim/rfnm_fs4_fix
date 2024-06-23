@@ -33,13 +33,13 @@ def main():
         buffs.append(numpy.array([0]*CHUNK_SZ, numpy.complex64))
 
     print("Fetching samples")
-    for i in range(2000):
+    for i in range(5000):
         sr = sdr.readStream(rxStream, buffs, CHUNK_SZ, timeoutUs=20000)
         if sr.ret < CHUNK_SZ:
             print("\nERROR: Read timeout!")
             break
         else:
-            print("Got chunk %d" % i, end='\r')
+            print("Got chunk %d, time %.3f" % (i, sr.timeNs / 1e9), end='\r')
 
     print("Closing stream")
     sdr.deactivateStream(rxStream)
