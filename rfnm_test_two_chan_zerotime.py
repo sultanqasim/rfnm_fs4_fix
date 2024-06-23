@@ -2,6 +2,7 @@
 
 import SoapySDR
 import numpy
+from time import time
 
 NUM_CHANNELS = 2
 CHUNK_SZ = 1 << 18
@@ -34,10 +35,16 @@ def main():
 
     print("Fetching samples")
     samples_read = 0
-    while samples_read < CHUNK_SZ * 2000:
+    samples_to_read = CHUNK_SZ * 2000
+    t_start = time()
+    while samples_read < samples_to_read:
         sr = sdr.readStream(rxStream, buffs, CHUNK_SZ, timeoutUs=0)
         samples_read += sr.ret
         print("Read %d samples" % samples_read, end='\r')
+    t_end = time()
+
+    samp_rate = samples_to_read / (t_end - t_start)
+    print("\nSample rate: %.3f Msps" % (samp_rate / 1E6))
 
     print("Closing stream")
     sdr.deactivateStream(rxStream)
