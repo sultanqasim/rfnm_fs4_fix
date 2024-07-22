@@ -34,11 +34,11 @@ def main():
         sdr.setSampleRate(SoapySDR.SOAPY_SDR_RX, channel, rates[1])
 
         antennas = sdr.listAntennas(SoapySDR.SOAPY_SDR_RX, channel)
-        sdr.setAntenna(SoapySDR.SOAPY_SDR_RX, channel, antennas[0])
+        sdr.setAntenna(SoapySDR.SOAPY_SDR_RX, channel, antennas[1])
 
         sdr.setBandwidth(SoapySDR.SOAPY_SDR_RX, channel, 2E6)
         sdr.setFrequency(SoapySDR.SOAPY_SDR_RX, channel, 2402E6)
-        sdr.setGain(SoapySDR.SOAPY_SDR_RX, channel, "RF", 15)
+        sdr.setGain(SoapySDR.SOAPY_SDR_RX, channel, "RF", 10)
         sdr.setDCOffsetMode(SoapySDR.SOAPY_SDR_RX, channel, True)
 
     # allocate buffers and files
