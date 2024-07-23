@@ -90,6 +90,44 @@ def hex_str(b):
     chars = ["%02x" % c for c in b]
     return " ".join(chars)
 
+whitening = [
+    1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, # 0
+	1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, # 16
+	1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, # 32
+	1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, # 48
+	0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, # 64
+	0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, # 80
+	0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, # 96
+	1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1     # 112
+]
+
+whitening_index = [
+    70, 62, 120, 111, 77, 46, 15, 101, 66, 39, 31, 26, 80,
+    83, 125, 89, 10, 35, 8, 54, 122, 17, 33, 0, 58, 115, 6,
+    94, 86, 49, 52, 20, 40, 27, 84, 90, 63, 112, 47, 102
+]
+
+# code based on ubertooth
+def le_dewhiten(data, chan):
+	dw = []
+	idx = whitening_index[chan]
+
+	for b in data:
+		o = 0
+		for i in range(8):
+			bit = (b >> i) & 1
+			bit ^= whitening[idx]
+			idx = (idx + 1) % len(whitening)
+			o |= bit << i
+		dw.append(o)
+
+	return bytes(dw)
+
+def le_trim_pkt(data):
+    # 2 bytes header, n byte body, 3 byte CRC
+    l = 2 + data[1] + 3
+    return data[:l]
+
 def main():
     print("Opening RFNM")
     args = dict(driver="RFNM")
@@ -143,7 +181,7 @@ def main():
     ds = capf[::8]
     fs //= 8
 
-    print("Bursts")
+    print("Extract bursts")
     bursts = burst_extract(ds)
 
     print("Demod")
@@ -153,7 +191,9 @@ def main():
         offset = find_sync32(syms)
         if offset:
             data = unpack_syms(syms, offset)
-            print(hex_str(data))
+            data_dw = le_dewhiten(data[4:], 37)
+            pkt = le_trim_pkt(data_dw)
+            print(hex_str(pkt))
         else:
             print("sync not found")
 
