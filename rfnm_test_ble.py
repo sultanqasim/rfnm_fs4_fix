@@ -11,16 +11,17 @@ NUM_CHANNELS = 1
 CHUNK_SZ = 1 << 18
 
 def burst_detect(capture, thresh=0.01, pad=10):
-    mag_high = numpy.abs(capture) > thresh
+    mag_low = numpy.abs(capture) > thresh * 0.8
+    mag_high = numpy.abs(capture) > thresh * 1.2
 
     ranges = []
     x = 0
     while x < len(capture):
         start = x + numpy.argmax(mag_high[x:])
-        stop = start + numpy.argmin(mag_high[start:])
-        if start == x:
+        if start == x and not mag_high[x]:
             break
-        if stop == start:
+        stop = start + numpy.argmin(mag_low[start:])
+        if stop == start and mag_low[-1]:
             stop = len(capture)
         start -= pad
         stop += pad
@@ -149,7 +150,7 @@ def main():
     # allocate buffers and files
     buffs = []
     captures = []
-    samples_to_read = CHUNK_SZ * 100
+    samples_to_read = CHUNK_SZ * 200
     for i in range(NUM_CHANNELS):
         buffs.append(numpy.zeros(CHUNK_SZ, numpy.complex64))
         captures.append(numpy.zeros(samples_to_read, numpy.complex64))
@@ -200,8 +201,10 @@ def main():
 
     """
     print("Plotting")
-    fig, axs = plt.subplots(1)
-    axs.plot(fm_demod(squelch(ds)))
+    fig, axs = plt.subplots(3)
+    axs[0].plot(numpy.real(ds))
+    axs[1].plot(numpy.real(squelch(ds)))
+    axs[2].plot(fm_demod(squelch(ds)))
     fig.tight_layout()
     plt.show()
     """
