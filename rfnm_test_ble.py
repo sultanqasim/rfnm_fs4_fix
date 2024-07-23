@@ -61,11 +61,18 @@ def fsk_decode(capture, samps_per_sym, clock_recovery=False):
 
     offset = 0
     if clock_recovery:
-        skip = int(samps_per_sym)
-        offset = skip + numpy.argmax(demod[skip:skip * 3])
+        skip = int(samps_per_sym * 3)
+        offset = skip + numpy.argmax(demod[skip:skip * 2])
 
     indices = numpy.array(numpy.arange(offset, len(capture), samps_per_sym), numpy.int64)
     digital_demod = numpy.array(demod > 0, numpy.uint8)
+
+    """
+    fig, axs = plt.subplots(2)
+    axs[0].plot(numpy.abs(capture))
+    axs[1].plot(demod, ".-", markevery=indices)
+    fig.tight_layout()
+    """
 
     return digital_demod[indices]
 
