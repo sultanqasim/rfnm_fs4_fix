@@ -150,7 +150,7 @@ def main():
     # allocate buffers and files
     buffs = []
     captures = []
-    samples_to_read = CHUNK_SZ * 200
+    samples_to_read = CHUNK_SZ * 500
     for i in range(NUM_CHANNELS):
         buffs.append(numpy.zeros(CHUNK_SZ, numpy.complex64))
         captures.append(numpy.zeros(samples_to_read, numpy.complex64))
