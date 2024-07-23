@@ -175,11 +175,12 @@ def main():
     sdr.closeStream(rxStream)
 
     print("Filtering")
-    fs = sdr.getSampleRate(SoapySDR.SOAPY_SDR_RX, channel)
+    INIT_DECIM = 4
+    fs = sdr.getSampleRate(SoapySDR.SOAPY_SDR_RX, channel) // INIT_DECIM
     lpf = scipy.signal.butter(3, 1E6, fs=fs)
-    capf = scipy.signal.lfilter(*lpf, captures[0])
-    ds = capf[::8]
-    fs //= 8
+    capf = scipy.signal.lfilter(*lpf, captures[0][::INIT_DECIM])
+    ds = capf[::2]
+    fs //= 2
 
     print("Extract bursts")
     bursts = burst_extract(ds)
