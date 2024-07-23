@@ -10,7 +10,7 @@ from struct import pack, unpack
 NUM_CHANNELS = 1
 CHUNK_SZ = 1 << 18
 
-def burst_detect(capture, thresh=0.02, pad=10):
+def burst_detect(capture, thresh=0.01, pad=10):
     mag_high = numpy.abs(capture) > thresh
 
     ranges = []
@@ -33,7 +33,7 @@ def burst_detect(capture, thresh=0.02, pad=10):
 
     return ranges
 
-def burst_extract(capture, thresh=0.02, pad=10):
+def burst_extract(capture, thresh=0.01, pad=10):
     burst_ranges = burst_detect(capture, thresh, pad)
     ranges = []
 
@@ -42,7 +42,7 @@ def burst_extract(capture, thresh=0.02, pad=10):
 
     return ranges
 
-def squelch(capture, thresh=0.02, pad=10):
+def squelch(capture, thresh=0.01, pad=10):
     burst_ranges = burst_detect(capture, thresh, pad)
     arr = numpy.zeros(capture.shape, capture.dtype)
 
@@ -60,8 +60,8 @@ def fsk_decode(capture, samps_per_sym, clock_recovery=False):
 
     offset = 0
     if clock_recovery:
-        skip = int(samps_per_sym * 2)
-        offset = skip + numpy.argmax(demod[skip:skip * 2])
+        skip = int(samps_per_sym)
+        offset = skip + numpy.argmax(demod[skip:skip * 3])
 
     indices = numpy.array(numpy.arange(offset, len(capture), samps_per_sym), numpy.int64)
     digital_demod = numpy.array(demod > 0, numpy.uint8)
