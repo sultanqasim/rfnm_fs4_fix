@@ -8,7 +8,7 @@ CHUNK_SZ = 1 << 18
 
 def main():
     print("Opening RFNM")
-    args = dict(driver="RFNM")
+    args = dict(driver="rfnm")
     sdr = SoapySDR.Device(args)
 
     print("Configuring")

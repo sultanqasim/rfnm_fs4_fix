@@ -6,7 +6,7 @@ import sys
 
 def main(samp_rate_index):
     print("Opening RFNM")
-    args = dict(driver="RFNM")
+    args = dict(driver="rfnm")
     sdr = SoapySDR.Device(args)
 
     print("Configuring")
