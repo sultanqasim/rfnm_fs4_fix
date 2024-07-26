@@ -20,7 +20,7 @@ def main():
 
     sdr.setBandwidth(SoapySDR.SOAPY_SDR_RX, 0, 90E6)
     sdr.setFrequency(SoapySDR.SOAPY_SDR_RX, 0, 2440E6)
-    sdr.setGain(SoapySDR.SOAPY_SDR_RX, 0, 10)
+    sdr.setGain(SoapySDR.SOAPY_SDR_RX, 0, "RF", 10)
     sdr.setDCOffsetMode(SoapySDR.SOAPY_SDR_RX, 0, True)
 
     print("Setting up stream")
