@@ -14,9 +14,10 @@ class PolyphaseChannelizer:
                                           chan_bw * chan_rel_bw,
                                           width=chan_bw * (1 - chan_rel_bw))
 
+        self.taps_per_chan = taps_per_chan
         self.channel_count = channel_count
         self.filter_coeffs = numpy.reshape(filter_coeffs, (channel_count, -1), order='F')
-        self.filter_ic = numpy.zeros((channel_count, taps_per_chan - 1), dtype=dtype)
+        self.filter_ic = numpy.zeros(channel_count * (taps_per_chan - 1), dtype=dtype)
 
         # first column of data for rows (channels) other than the first
         self.extra = numpy.zeros(channel_count - 1, dtype=dtype)
@@ -27,7 +28,7 @@ class PolyphaseChannelizer:
     def process(self, samples: numpy.typing.ArrayLike) -> numpy.ndarray:
         # amount of samples we process per operation must be a multiple of channel count
         if self.leftover:
-            samples = numpy.hstack([samples, self.leftover])
+            samples = numpy.hstack([self.filter_ic, samples, self.leftover])
             self.leftover = None
 
         leftover_samps = len(samples) % self.channel_count
@@ -35,18 +36,18 @@ class PolyphaseChannelizer:
             self.leftover = samples[-leftover_samps:]
             samples = samples[:-leftover_samps]
 
+        self.filter_ic = samples[:-len(self.filter_ic)]
+
         # For columns to line up properly:
         # - append a 0 to first row (channel)
         # - prepend previous values (or zeros) to other rows
         # Row ordering also needs to be 0 M-1 M-2 ... 2 1
         # See https://kastnerkyle.github.io/posts/polyphase-signal-processing/index.html
         filtered_samps = numpy.zeros((self.channel_count, len(samples) // self.channel_count + 1), dtype=samples.dtype)
-        filtered_samps[0, :-1], self.filter_ic[0] = scipy.signal.lfilter(
-                self.filter_coeffs[0], 1, samples[::self.channel_count], zi=self.filter_ic[0])
+        filtered_samps[0, :-1] = numpy.convolve(samples[::self.channel_count], self.filter_coeffs[0])[:-(self.taps_per_chan - 1)]
         filtered_samps[1:, 0] = self.extra
         for i in range(1, self.channel_count):
-            filtered_samps[i, 1:], self.filter_ic[i] = scipy.signal.lfilter(
-                    self.filter_coeffs[i], 1, samples[self.channel_count - i::self.channel_count], zi=self.filter_ic[i])
+            filtered_samps[i, 1:] = numpy.convolve(samples[self.channel_count - i::self.channel_count], self.filter_coeffs[i])[:-(self.taps_per_chan - 1)]
         self.extra = filtered_samps[1:, -1]
 
         return scipy.fft.ifft(filtered_samps[:, :-1], axis=0, norm="forward")
