@@ -56,7 +56,7 @@ class PolyphaseChannelizer:
         # Do the FFTs in a thread pool
         output = numpy.zeros((self.channel_count, output_len), dtype=filtered_samps.dtype)
         futures = []
-        chunk_size = filtered_samps.shape[1] // 256
+        chunk_size = 8192
         for i in range(0, filtered_samps.shape[1] - 1, chunk_size):
             if filtered_samps.shape[1] - 1 - i < chunk_size:
                 chunk_size = filtered_samps.shape[1] - 1 - i
