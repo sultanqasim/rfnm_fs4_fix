@@ -48,18 +48,21 @@ def fm_demod(capture):
     phase = numpy.angle(capture)
     return numpy.gradient(numpy.unwrap(phase))
 
-def fsk_decode(capture, samps_per_sym, clock_recovery=False):
+def fsk_decode(capture, fs, sym_rate, clock_recovery=False, cfo=0):
     demod = fm_demod(capture)
-    print("mean", numpy.mean(demod))
-    demod -= numpy.mean(demod) # CFO correction
 
+    samps_per_sym = fs / sym_rate
     offset = 0
     if clock_recovery:
         skip = int(samps_per_sym * 3)
-        offset = skip + numpy.argmax(demod[skip:skip * 2])
+        if len(demod) > skip * 2:
+            offset = skip + numpy.argmax(demod[skip:skip * 2])
+
+    # convert from Carrier Frequency Offset (CFO) in Hz to radians per sample error
+    demod_offset = cfo * 2 * numpy.pi / fs
 
     indices = numpy.array(numpy.arange(offset, len(capture), samps_per_sym), numpy.int64)
-    digital_demod = numpy.array(demod > 0, numpy.uint8)
+    digital_demod = numpy.array(demod > demod_offset, numpy.uint8)
 
     """
     fig, axs = plt.subplots(2)

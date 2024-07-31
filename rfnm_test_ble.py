@@ -69,16 +69,15 @@ def main():
     bursts = burst_extract(ds)
 
     print("Demod")
-    samps_per_sym = fs / 1E6
     for b in bursts:
-        syms = fsk_decode(b, samps_per_sym, True)
+        syms = fsk_decode(b, fs, 1E6, True)
         offset = find_sync32(syms)
         if offset:
             data = unpack_syms(syms, offset)
             data_dw = le_dewhiten(data[4:], 37)
             pkt = le_trim_pkt(data_dw)
             print(hex_str(pkt))
-        else:
+        elif len(b) > 200:
             print("sync not found")
 
     """
