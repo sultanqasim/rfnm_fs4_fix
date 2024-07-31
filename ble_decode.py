@@ -15,15 +15,9 @@ def main():
     fs = 122.88e6
     samples = numpy.fromfile("ble_capture_f_2440_sr_122880000.cf32", dtype=numpy.complex64)
 
-    print("Resampling")
-    fs_resamp = 124E6
-    print(int(len(samples) * fs_resamp / fs))
-    samples_resamp = scipy.signal.resample(samples, int(len(samples) * fs_resamp / fs))
-    print(samples_resamp.shape)
-
-    chan_count = 62
+    chan_count = 61
     channelizer = PolyphaseChannelizer(chan_count)
-    chan_width = fs_resamp / chan_count
+    chan_width = fs / chan_count
 
     channels_ble = [37, 38, 39]
     channels_seq = [0, 12, 39]
@@ -36,8 +30,8 @@ def main():
     # smaller chunk sizes get worse performance, below 2^20 is dramatically worse
     # bigger chunk sizes also actually get a little worse on my Mac
     chunk_sz = 1 << 22
-    for i in range(0, len(samples_resamp), chunk_sz):
-        channelized = channelizer.process(samples_resamp[i:i + chunk_sz])
+    for i in range(0, len(samples), chunk_sz):
+        channelized = channelizer.process(samples[i:i + chunk_sz])
         process_channels(channelized, chan_width, channels_ble, channels_poly)
     t1 = time()
     print("Processed %.3f s of samples in %.3f s" % (len(samples) / fs, t1 - t0))
