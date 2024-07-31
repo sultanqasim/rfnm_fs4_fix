@@ -19,36 +19,48 @@ def main():
     channelizer = PolyphaseChannelizer(chan_count)
     chan_width = fs / chan_count
 
+    channels_ble = [37, 38, 39]
+    channels_seq = [0, 12, 39]
+    centre_seq = 19 # 2440 MHz
+    channels_poly = [channelizer.chan_idx(s - centre_seq) for s in channels_seq]
+
     print("Channelizing")
     t0 = time()
-    channelized = channelizer.process(samples)
+    # chunk size of 2^22 tuned for performance on 6-core M2 Pro with Mac OS 14
+    # smaller chunk sizes get worse performance, below 2^20 is dramatically worse
+    # bigger chunk sizes also actually get a little worse on my Mac
+    chunk_sz = 1 << 22
+    for i in range(0, len(samples), chunk_sz):
+        channelized = channelizer.process(samples[i:i + chunk_sz])
+        process_channels(channelized, chan_width, channels_ble, channels_poly)
     t1 = time()
-    print("Channelized %.3f s of samples in %.3f s" % (len(samples) / fs, t1 - t0))
-    return
+    print("Processed %.3f s of samples in %.3f s" % (len(samples) / fs, t1 - t0))
+    print("Found %d, failed %d" % (found, failed))
 
-    print("Filtering")
-    INIT_DECIM = 4
-    fs = sdr.getSampleRate(SoapySDR.SOAPY_SDR_RX, channel) // INIT_DECIM
-    lpf = scipy.signal.butter(3, 1E6, fs=fs)
-    capf = scipy.signal.lfilter(*lpf, captures[0][::INIT_DECIM])
-    ds = capf[::2]
-    fs //= 2
+found = 0
+failed = 0
 
-    print("Extract bursts")
-    bursts = burst_extract(ds)
+def process_channels(channelized, fs, channels_ble, channels_poly):
+    resamp_ratio = 1
+    samps_per_sym = resamp_ratio * fs / 1E6
+    global found, failed
 
-    print("Demod")
-    samps_per_sym = fs / 1E6
-    for b in bursts:
-        syms = fsk_decode(b, samps_per_sym, True)
-        offset = find_sync32(syms)
-        if offset:
-            data = unpack_syms(syms, offset)
-            data_dw = le_dewhiten(data[4:], 37)
-            pkt = le_trim_pkt(data_dw)
-            print(hex_str(pkt))
-        else:
-            print("sync not found")
+    for i, chan in enumerate(channels_ble):
+        samples = channelized[channels_poly[i]]
+        bursts = burst_extract(samples)
+        for b in bursts:
+            b_resamp = scipy.signal.resample(b, len(b) * resamp_ratio)
+            syms = fsk_decode(b_resamp, samps_per_sym, True)
+            offset = find_sync32(syms)
+            if offset:
+                data = unpack_syms(syms, offset)
+                data_dw = le_dewhiten(data[4:], 37)
+                pkt = le_trim_pkt(data_dw)
+                print(chan, hex_str(pkt))
+                found += 1
+            else:
+                print("sync not found, chan %d, len %d" % (chan, len(syms)))
+                failed += 1
 
     """
     print("Plotting")

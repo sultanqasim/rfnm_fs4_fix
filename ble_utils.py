@@ -1,4 +1,8 @@
-def burst_detect(capture, thresh=0.01, pad=10):
+import numpy
+import scipy
+from struct import pack
+
+def burst_detect(capture, thresh=0.002, pad=10):
     mag_low = numpy.abs(capture) > thresh * 0.8
     mag_high = numpy.abs(capture) > thresh * 1.2
 
@@ -46,6 +50,8 @@ def fm_demod(capture):
 
 def fsk_decode(capture, samps_per_sym, clock_recovery=False):
     demod = fm_demod(capture)
+    print("mean", numpy.mean(demod))
+    demod -= numpy.mean(demod) # CFO correction
 
     offset = 0
     if clock_recovery:
