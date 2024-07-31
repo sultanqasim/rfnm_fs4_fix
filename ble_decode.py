@@ -59,7 +59,7 @@ def process_channels(channelized, fs, channels_ble, channels_poly, channels_cfo)
                 pkt = le_trim_pkt(data_dw)
                 print(chan, hex_str(pkt))
                 found += 1
-            else:
+            elif len(syms) > 48:
                 print("sync not found, chan %d, len %d" % (chan, len(syms)))
                 failed += 1
 
