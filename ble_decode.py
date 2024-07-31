@@ -43,13 +43,15 @@ found = 0
 failed = 0
 
 def process_channels(channelized, fs, channels_ble, channels_poly, channels_cfo):
+    resamp_ratio = 4E6 / fs
     global found, failed
 
     for i, chan in enumerate(channels_ble):
         samples = channelized[channels_poly[i]]
         bursts = burst_extract(samples)
         for b in bursts:
-            syms = fsk_decode(b, fs, 1E6, True, cfo=channels_cfo[i])
+            b_resamp = scipy.signal.resample(b, int(len(b) * resamp_ratio))
+            syms = fsk_decode(b_resamp, fs * resamp_ratio, 1E6, True, cfo=channels_cfo[i])
             offset = find_sync32(syms)
             if offset:
                 data = unpack_syms(syms, offset)
