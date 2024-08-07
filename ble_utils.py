@@ -2,7 +2,7 @@ import numpy
 import scipy
 from struct import pack
 
-def burst_detect(capture, thresh=0.002, pad=10):
+def burst_detect(capture, thresh=0.002, pad=4):
     mag_low = numpy.abs(capture) > thresh * 0.8
     mag_high = numpy.abs(capture) > thresh * 1.2
 
@@ -26,7 +26,7 @@ def burst_detect(capture, thresh=0.002, pad=10):
 
     return ranges
 
-def burst_extract(capture, thresh=0.01, pad=10):
+def burst_extract(capture, thresh=0.01, pad=4):
     burst_ranges = burst_detect(capture, thresh, pad)
     ranges = []
 
@@ -35,7 +35,7 @@ def burst_extract(capture, thresh=0.01, pad=10):
 
     return ranges
 
-def squelch(capture, thresh=0.01, pad=10):
+def squelch(capture, thresh=0.01, pad=4):
     burst_ranges = burst_detect(capture, thresh, pad)
     arr = numpy.zeros(capture.shape, capture.dtype)
 
