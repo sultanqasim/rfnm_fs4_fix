@@ -30,13 +30,11 @@ def main():
     chan_count = 48
     channelizer = PolyphaseChannelizer(chan_count)
     chan_width = fs / chan_count
-    chan_err = chan_width - 2E6
 
     channels_ble = [37, 38, 39]
     channels_seq = [0, 12, 39]
     centre_seq = 19 # 2440 MHz
     channels_poly = [channelizer.chan_idx(s - centre_seq) for s in channels_seq]
-    channels_cfo = [chan_err * (centre_seq - s) for s in channels_seq]
 
     print("Channelizing and processing")
     t0 = time()
@@ -46,7 +44,7 @@ def main():
     chunk_sz = 1 << 22
     for i in range(0, len(samples), chunk_sz):
         channelized = channelizer.process(samples[i:i + chunk_sz])
-        process_channels(channelized, chan_width, channels_ble, channels_poly, channels_cfo)
+        process_channels(channelized, chan_width, channels_ble, channels_poly)
     t1 = time()
     print("Processed %.3f s of samples in %.3f s" % (len(samples) / fs, t1 - t0))
     print("Found %d, failed %d" % (found, failed))
@@ -54,16 +52,14 @@ def main():
 found = 0
 failed = 0
 
-def process_channels(channelized, fs, channels_ble, channels_poly, channels_cfo):
-    resamp_ratio = 4E6 / fs
+def process_channels(channelized, fs, channels_ble, channels_poly):
     global found, failed
 
     for i, chan in enumerate(channels_ble):
         samples = channelized[channels_poly[i]]
         bursts = burst_extract(samples)
         for b in bursts:
-            b_resamp = scipy.signal.resample(b, int(len(b) * resamp_ratio))
-            syms = fsk_decode(b_resamp, fs * resamp_ratio, 1E6, True, cfo=channels_cfo[i])
+            syms = fsk_decode(b, fs, 1E6, True)
             offset = find_sync32(syms)
             if offset:
                 data = unpack_syms(syms, offset)
