@@ -73,20 +73,25 @@ def fsk_decode(capture, fs, sym_rate, clock_recovery=False, cfo=0):
 
     return digital_demod[indices]
 
-def find_sync32(syms, sync_word=0x8E89BED6):
-    seq = numpy.unpackbits(numpy.frombuffer(pack('<I', sync_word), numpy.uint8), bitorder='little')
-    found = False
-    i = 0
-    while i < len(syms) - 32:
-        if numpy.array_equal(syms[i:i+32], seq):
-            found = True
-            break
-        i += 1
+def find_sync(syms, sync: bytes, big_endian=False, corr_thresh=3):
+    if big_endian:
+        seq = numpy.unpackbits(numpy.frombuffer(sync, numpy.uint8), bitorder='big')
+    else:
+        seq = numpy.unpackbits(numpy.frombuffer(sync, numpy.uint8), bitorder='little')
 
-    if found:
-        return i
+    # make the sequences -1 or +1 so that cross correlation equals number of matching bits
+    seq_signed = ((2 * seq) - 1).view(numpy.int8)
+    syms_signed = ((2 * syms) - 1).view(numpy.int8)
+    corr = numpy.correlate(syms_signed, seq_signed)
+    pos = numpy.argmax(corr)
+    if corr[pos] >= 32 - corr_thresh:
+        return pos
     else:
         return None
+
+def find_sync32(syms, sync_word=0x8E89BED6):
+    sync = pack('<I', sync_word)
+    return find_sync(syms, sync)
 
 def unpack_syms(syms, start_offset):
     return numpy.packbits(syms[start_offset:], bitorder='little')
