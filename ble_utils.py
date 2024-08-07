@@ -91,11 +91,14 @@ def find_sync_multi(samples_demod, sync, big_endian=False, corr_thresh=2, samps_
 
 def ble_pkt_extract(samples_demod, peaks, chan, samps_per_sym=2):
     pkts = []
+    MAX_PKT = 264 # 4 byte AA, 2 byte header, 255 byte body, 3 byte CRC
     for p in peaks:
-        syms = samples_demod[p:p+(8*264*samps_per_sym):samps_per_sym]
-        data = le_dewhiten(unpack_syms(syms, 32), chan)
-        if len(data) > 2 and len(data) + 5 >= data[1]:
-            pkts.append(data[:data[1] + 5])
+        syms = samples_demod[p:p+(8*MAX_PKT*samps_per_sym):samps_per_sym]
+        raw = unpack_syms(syms, 32)
+        if len(raw) > 2:
+            hdr = le_dewhiten(raw[:2], chan)
+            pkt_len = 5 + hdr[1]
+            pkts.append(le_dewhiten(raw[:pkt_len], chan))
     return pkts
 
 def find_sync(syms, sync: bytes, big_endian=False, corr_thresh=2):
