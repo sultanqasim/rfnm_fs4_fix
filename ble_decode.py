@@ -15,7 +15,19 @@ def main():
     fs = 122.88e6
     samples = numpy.fromfile("ble_capture_f_2440_sr_122880000.cf32", dtype=numpy.complex64)
 
-    chan_count = 61
+    print("Resampling")
+    # 122.88 -> 96:  25/32
+    RESAMP_UP = 25
+    RESAMP_DOWN = 32
+    fs = fs * RESAMP_UP / RESAMP_DOWN
+    filt_size = 2 * RESAMP_UP + 1
+    h = scipy.signal.firwin(filt_size, 1.0 / RESAMP_DOWN).astype(numpy.complex64) * RESAMP_UP
+    t0 = time()
+    samples = scipy.signal.upfirdn(h, samples, RESAMP_UP, RESAMP_DOWN)
+    t1 = time()
+    print("resampled in", t1 - t0, "s")
+
+    chan_count = 48
     channelizer = PolyphaseChannelizer(chan_count)
     chan_width = fs / chan_count
     chan_err = chan_width - 2E6
@@ -26,7 +38,7 @@ def main():
     channels_poly = [channelizer.chan_idx(s - centre_seq) for s in channels_seq]
     channels_cfo = [chan_err * (centre_seq - s) for s in channels_seq]
 
-    print("Channelizing")
+    print("Channelizing and processing")
     t0 = time()
     # chunk size of 2^22 tuned for performance on 6-core M2 Pro with Mac OS 14
     # smaller chunk sizes get worse performance, below 2^20 is dramatically worse
