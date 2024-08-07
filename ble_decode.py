@@ -57,19 +57,12 @@ def process_channels(channelized, fs, channels_ble, channels_poly):
 
     for i, chan in enumerate(channels_ble):
         samples = channelized[channels_poly[i]]
-        bursts = burst_extract(samples)
-        for b in bursts:
-            syms = fsk_decode(b, fs, 1E6, True)
-            offset = find_sync32(syms)
-            if offset:
-                data = unpack_syms(syms, offset)
-                data_dw = le_dewhiten(data[4:], 37)
-                pkt = le_trim_pkt(data_dw)
-                print(chan, hex_str(pkt))
-                found += 1
-            elif len(syms) > 48:
-                print("sync not found, chan %d, len %d" % (chan, len(syms)))
-                failed += 1
+        samples_demod = fm_demod(samples) > 0
+        peaks = find_sync_multi(samples_demod, b'\xd6\xbe\x89\x8e')
+        pkts = ble_pkt_extract(samples_demod, peaks, chan)
+        for pkt in pkts:
+            print(chan, hex_str(pkt))
+            found += 1
 
     """
     print("Plotting")

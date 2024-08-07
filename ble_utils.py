@@ -73,7 +73,32 @@ def fsk_decode(capture, fs, sym_rate, clock_recovery=False, cfo=0):
 
     return digital_demod[indices]
 
-def find_sync(syms, sync: bytes, big_endian=False, corr_thresh=3):
+def find_sync_multi(samples_demod, sync, big_endian=False, corr_thresh=2, samps_per_sym=2):
+    if big_endian:
+        seq = numpy.unpackbits(numpy.frombuffer(sync, numpy.uint8), bitorder='big')
+    else:
+        seq = numpy.unpackbits(numpy.frombuffer(sync, numpy.uint8), bitorder='little')
+
+    # make the sequence -1 or +1 so that cross correlation equals number of matching bits
+    seq_signed = numpy.zeros(len(seq) * samps_per_sym, dtype=numpy.float32)
+    seq_signed[0::samps_per_sym] = ((2 * seq) - 1).view(numpy.int8)
+    syms_signed = (2 * samples_demod.view(numpy.int8)) - 1
+
+    corr = numpy.correlate(syms_signed, seq_signed)
+    peaks, _ = scipy.signal.find_peaks(corr, len(seq) - corr_thresh)
+
+    return peaks
+
+def ble_pkt_extract(samples_demod, peaks, chan, samps_per_sym=2):
+    pkts = []
+    for p in peaks:
+        syms = samples_demod[p:p+(8*264*samps_per_sym):samps_per_sym]
+        data = le_dewhiten(unpack_syms(syms, 32), chan)
+        if len(data) > 2 and len(data) + 5 >= data[1]:
+            pkts.append(data[:data[1] + 5])
+    return pkts
+
+def find_sync(syms, sync: bytes, big_endian=False, corr_thresh=2):
     if big_endian:
         seq = numpy.unpackbits(numpy.frombuffer(sync, numpy.uint8), bitorder='big')
     else:
@@ -84,7 +109,7 @@ def find_sync(syms, sync: bytes, big_endian=False, corr_thresh=3):
     syms_signed = ((2 * syms) - 1).view(numpy.int8)
     corr = numpy.correlate(syms_signed, seq_signed)
     pos = numpy.argmax(corr)
-    if corr[pos] >= 32 - corr_thresh:
+    if corr[pos] >= len(seq) - corr_thresh:
         return pos
     else:
         return None
