@@ -1,5 +1,6 @@
 import numpy
 import scipy
+import re
 from struct import pack
 
 def burst_detect(capture, thresh=0.002, pad=4):
@@ -92,6 +93,29 @@ def find_sync_multi(samples_demod, sync, big_endian=False, corr_thresh=2, samps_
     peaks, _ = scipy.signal.find_peaks(corr, len(seq) - corr_thresh)
 
     return peaks
+
+def find_sync_multi2(samples_demod, sync, samps_per_sym=2):
+    indices = []
+
+    sync_len = len(sync) * 8
+    sync_bits = numpy.unpackbits(numpy.frombuffer(b'\xaa' + sync, numpy.uint8), bitorder='little')
+    sync_seqs = [numpy.packbits(sync_bits[8-i:8+sync_len-i], bitorder='little').tobytes() for i in range(8)]
+
+    for i in range(samps_per_sym):
+        syms = numpy.packbits(samples_demod[i::samps_per_sym], bitorder='little').tobytes()
+        for j, seq in enumerate(sync_seqs):
+            indices.extend([(m.start()*8 + j)*samps_per_sym + i for m in re.finditer(seq, syms)])
+
+    # deduplicate
+    indices.sort()
+    last_index = -samps_per_sym
+    indices2 = []
+    for i in indices:
+        if i - last_index < samps_per_sym: continue
+        indices2.append(i)
+        last_index = i
+
+    return indices2
 
 def ble_pkt_extract(samples_demod, peaks, chan, samps_per_sym=2):
     pkts = []

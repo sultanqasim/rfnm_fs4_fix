@@ -58,7 +58,7 @@ def process_channels(channelized, fs, channels_ble, channels_poly):
     for i, chan in enumerate(channels_ble):
         samples = channelized[channels_poly[i]]
         samples_demod = fm_demod(samples) > 0
-        peaks = find_sync_multi(samples_demod, b'\xd6\xbe\x89\x8e')
+        peaks = find_sync_multi2(samples_demod, b'\xd6\xbe\x89\x8e')
         pkts = ble_pkt_extract(samples_demod, peaks, chan)
         for pkt in pkts:
             print(chan, hex_str(pkt))
