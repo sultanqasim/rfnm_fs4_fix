@@ -98,13 +98,13 @@ def find_sync_multi2(samples_demod, sync, samps_per_sym=2):
     indices = []
 
     sync_len = len(sync) * 8
-    sync_bits = numpy.unpackbits(numpy.frombuffer(b'\xaa' + sync, numpy.uint8), bitorder='little')
-    sync_seqs = [numpy.packbits(sync_bits[8-i:8+sync_len-i], bitorder='little').tobytes() for i in range(8)]
+    sync_bits = numpy.unpackbits(numpy.frombuffer(sync, numpy.uint8), bitorder='little')
+    sync_seqs = [numpy.packbits(sync_bits[8-i:sync_len-i], bitorder='little').tobytes() for i in range(8)]
 
     for i in range(samps_per_sym):
         syms = numpy.packbits(samples_demod[i::samps_per_sym], bitorder='little').tobytes()
         for j, seq in enumerate(sync_seqs):
-            indices.extend([(m.start()*8 + j)*samps_per_sym + i for m in re.finditer(seq, syms)])
+            indices.extend([((m.start() - 1)*8 + j)*samps_per_sym + i for m in re.finditer(seq, syms)])
 
     # deduplicate
     indices.sort()
