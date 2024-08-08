@@ -46,7 +46,11 @@ def squelch(capture, thresh=0.01, pad=4):
 
 def fm_demod(capture):
     phase = numpy.angle(capture)
-    return numpy.gradient(numpy.unwrap(phase))
+    d = numpy.diff(phase)
+    d += numpy.pi
+    d %= 2 * numpy.pi
+    d -= numpy.pi
+    return (d[:-1] + d[1:]) * 0.5
 
 def fsk_decode(capture, fs, sym_rate, clock_recovery=False, cfo=0):
     demod = fm_demod(capture)
