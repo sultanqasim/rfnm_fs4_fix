@@ -51,7 +51,7 @@ def fm_demod(capture):
     d += numpy.pi
     d %= 2 * numpy.pi
     d -= numpy.pi
-    return (d[:-1] + d[1:]) * 0.5
+    return d
 
 def fsk_decode(capture, fs, sym_rate, clock_recovery=False, cfo=0):
     demod = fm_demod(capture)
