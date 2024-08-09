@@ -45,13 +45,13 @@ def squelch(capture, thresh=0.01, pad=4):
 
     return arr
 
-def fm_demod(capture):
+def fm_demod(capture, prev=numpy.complex64(0)):
     i = numpy.real(capture)
     q = numpy.imag(capture)
-    idot = numpy.diff(i)
-    qdot = numpy.diff(q)
-    sq = numpy.square(i[:-1]) + numpy.square(q[:-1])
-    return (i[:-1]*qdot - q[:-1]*idot) / sq
+    idot = numpy.diff(i, prepend=numpy.real(prev))
+    qdot = numpy.diff(q, prepend=numpy.imag(prev))
+    sq = numpy.square(i) + numpy.square(q)
+    return (i*qdot - q*idot) / sq
 
 def fsk_decode(capture, fs, sym_rate, clock_recovery=False, cfo=0):
     demod = fm_demod(capture)
