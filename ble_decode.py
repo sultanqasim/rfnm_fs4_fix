@@ -20,8 +20,8 @@ def main():
     RESAMP_UP = 25
     RESAMP_DOWN = 32
     fs = fs * RESAMP_UP / RESAMP_DOWN
-    filt_size = 2 * RESAMP_UP + 1
-    h = scipy.signal.firwin(filt_size, 1.0 / RESAMP_DOWN).astype(numpy.complex64) * RESAMP_UP
+    filt_size = 5 * RESAMP_UP
+    h = scipy.signal.firwin(filt_size, 0.9 / RESAMP_DOWN).astype(numpy.complex64) * RESAMP_UP
     t0 = time()
     samples = scipy.signal.upfirdn(h, samples, RESAMP_UP, RESAMP_DOWN)
     t1 = time()
